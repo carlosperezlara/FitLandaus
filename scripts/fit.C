@@ -11,6 +11,53 @@
 #include <iostream>
 #include <fstream>
 
+TString state[2][8][24][128];
+
+void loadState() {
+  ifstream fin;
+  int arm, lyr, sen, mpd;
+
+  fin.open("discretised.lst");
+  for(;;) {
+    fin >> arm;
+    if(!fin.good()) break;
+    fin >> lyr >> sen >> mpd;
+    state[arm][lyr][sen][mpd] = "discretised";
+  }
+  fin.close();
+
+  fin.open("brokenABD.lst");
+  for(;;) {
+    fin >> arm;
+    if(!fin.good()) break;
+    fin >> lyr >> sen >> mpd;
+    state[arm][lyr][sen][mpd] = "BABD";
+  }
+  fin.close();
+
+  fin.open("broken.lst");
+  for(;;) {
+    fin >> arm;
+    if(!fin.good()) break;
+    fin >> lyr >> sen >> mpd;
+    state[arm][lyr][sen][mpd] = "BrOkEn";
+  }
+  fin.close();
+
+  fin.open("dead.lst");
+  int ndead=0;
+  for(;;++ndead) {
+    fin >> arm;
+    if(!fin.good()) break;
+    fin >> lyr >> sen >> mpd;
+    state[arm][lyr][sen][mpd] = "DeAd";
+  }
+  fin.close();
+  cout << "numnber of deads = " << ndead << endl;
+
+  return;
+}
+
 TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   const char *bgr = Form("[6]*TMath::Exp([7]*(x-%f))",xinit);
   const char *la1 = "(1-[3]-[4]-[5])*TMath::Landau(x,1.00*[1],1.0*[2],1)";
@@ -24,8 +71,8 @@ TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   ret->SetParName(2,"sigma");
   ret->SetParName(3,"f2");
   ret->SetParameter(0,1e4);  ret->SetParLimits(0,1e2,1e7);
-  ret->SetParameter(1,22);   ret->SetParLimits(1,5,40);
-  ret->SetParameter(2,5.0);  ret->SetParLimits(2,1.8,10.0);
+  ret->SetParameter(1,20);   ret->SetParLimits(1,11,30.0);
+  ret->SetParameter(2,3.0);  ret->SetParLimits(2,1.5,5.0);
   if(lyr>1) {
     ret->SetParameter(1,15);   ret->SetParLimits(1,2,30);
     ret->SetParameter(2,5.0);  ret->SetParLimits(2,0.8,10.0);
@@ -105,6 +152,7 @@ void fit(const char *run="432637_432999",
 	 int minentries=50) {
   gSystem->Exec( Form("mkdir -p %s/fit",run) );
   gSystem->Exec( Form("mkdir -p %s/fiteps",run) );
+  loadState();
   // data
   TString inname = Form("%s/adc/HI_ARM%d_LYR%d_S%d_M%d.root",run,arm,lyr,sen,mpd);
   TString outname = Form("HI_ARM%d_LYR%d_S%d_M%d_%.0f_%.0f",arm,lyr,sen,mpd,xfit_min,xfit_max);
@@ -178,7 +226,7 @@ void fit(const char *run="432637_432999",
   TCanvas *main = new TCanvas("main","main");
   //main->SetLogy(1);
   out->Draw("HE");
-  double ymax = entries/10;
+  double ymax = entries/8;
   out->GetYaxis()->SetRangeUser(0.5,ymax);
   out->GetXaxis()->SetRangeUser(-5,85);
   out->Sumw2();
@@ -210,6 +258,7 @@ void fit(const char *run="432637_432999",
   text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
   text->SetTextColor(kMagenta-3);
   text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
+  text->DrawLatex(30, (0.48*(ymax)), Form("%s",state[arm][lyr][sen][mpd].Data()) );
   text->SetTextColor(kGray);
   text->DrawLatex(30, (0.33*(ymax)), Form("Slope  %.2f",bsl) );
   text->SetTextColor(kBlack);

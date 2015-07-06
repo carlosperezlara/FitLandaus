@@ -1,8 +1,17 @@
 RUN=434017_435939
-ARM=0
-LYR=1
-SEN=13
-MPD=64
 DRAW=1
-root -l scripts/fit.C\(\"${RUN}\",${ARM},${LYR},${SEN},${MPD},${DRAW},7.5,82.5,50\)
-#root -b -l -q scripts/fit.C\(\"${RUN}\",${ARM},${LYR},${SEN},${MPD},${DRAW},14.5,82.5,50\)
+
+for ARM in 0 1
+do
+    for LYR in 0 1
+    do
+	for SEN in 4 5 9 10 13 14
+	do
+	    for MPD in 31 96
+	    do
+		root -b -l -q scripts/fit.C\(\"${RUN}\",${ARM},${LYR},${SEN},${MPD},${DRAW},6.5,82.5,50\)
+		root -b -l -q scripts/fit.C\(\"${RUN}\",${ARM},${LYR},${SEN},${MPD},${DRAW},6.5,82.5,50\)
+	    done
+	done
+    done
+done
