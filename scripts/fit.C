@@ -11,15 +11,14 @@
 #include <iostream>
 #include <fstream>
 
-TF1* GetFit(const char *run, const char *outname, int lyr) {
-  //TF1 *ret = new TF1("fit_H1",
-  //                   "[0]*((1-[3])*TMath::Landau(x,[1],[2],1)+[3]*TMath::Landau(x,2.14*[1],2*[2],1))");
+TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
+  const char *bgr = Form("[6]*TMath::Exp([7]*(x-%f))",xinit);
   const char *la1 = "(1-[3]-[4]-[5])*TMath::Landau(x,1.00*[1],1.0*[2],1)";
   const char *la2 = "[3]*TMath::Landau(x,2.14*[1],2.0*[2],1)";
   const char *la3 = "[4]*TMath::Landau(x,3.33*[1],3.0*[2],1)";
   const char *la4 = "[5]*TMath::Landau(x,4.55*[1],4.0*[2],1)";
   TF1 *ret = new TF1("fit_H1",
-                     Form("[0]*(%s+%s+%s+%s)",la1,la2,la3,la4) );
+                     Form("[0]*(%s+%s+%s+%s)+%s",la1,la2,la3,la4,bgr) );
   ret->SetParName(0,"A");
   ret->SetParName(1,"lambda");
   ret->SetParName(2,"sigma");
@@ -34,6 +33,9 @@ TF1* GetFit(const char *run, const char *outname, int lyr) {
   ret->SetParameter(3,0.20); ret->SetParLimits(3,-1e-10,0.40);
   ret->SetParameter(4,0.0);
   ret->SetParameter(5,0.0);
+  ret->SetParameter(6,500); ret->SetParLimits(6,1e2,1e7);
+  ret->SetParameter(7,-1);  ret->SetParLimits(7,-10,-0.1);
+
   ret->SetLineColor(kRed-3);
 
   ifstream infit;
@@ -50,8 +52,8 @@ TF1* GetFit(const char *run, const char *outname, int lyr) {
   infit.close();
   if(found) {
     cout << " Previous fit results found" << endl;
-    ret->SetParLimits(4,-1e-10,0.20);
-    ret->SetParLimits(5,-1e-10,0.20);
+    ret->SetParLimits(4,0,0.10);
+    ret->SetParLimits(5,0,0.10);
   } else {
     ret->SetParLimits(4,+1,-1);
     ret->SetParLimits(5,+1,-1);
@@ -88,13 +90,18 @@ TF1* GetMIP(TF1 *fit, int n, int color=kBlue-3) {
   return ret;
 }
 
-void fit(const char *run="19020_19035",
-	 //const char *run="19037_19049",
-	 //const char *run="19052_19057",
-	 int arm=0, int lyr=0, int sen=13, int mpd=31,
+TF1* GetBGR(TF1 *fit, double xinit, int color=kGray) {
+  double a = fit->GetParameter(6);
+  double b = fit->GetParameter(7);
+  TF1 *ret = new TF1("BGR", Form("%f*TMath::Exp(%f*(x-%f))",a,b,xinit),0,150);
+  ret->SetLineColor(color);
+  return ret;
+}
+
+void fit(const char *run="432637_432999",
+	 int arm=0, int lyr=1, int sen=13, int mpd=64,
 	 bool draw=true,
-	 //double xfit_min=6.5, double xfit_max=62.5,
-	 double xfit_min=14.5, double xfit_max=82.5,
+	 double xfit_min=7.5, double xfit_max=82.5,
 	 int minentries=50) {
   gSystem->Exec( Form("mkdir -p %s/fit",run) );
   gSystem->Exec( Form("mkdir -p %s/fiteps",run) );
@@ -115,7 +122,7 @@ void fit(const char *run="19020_19035",
   }
 
   // fit
-  TF1 *fitH = GetFit(run,outname.Data(),lyr);
+  TF1 *fitH = GetFit(run,outname.Data(),lyr,xfit_min);
   out->Fit(fitH,"MELIR","",xfit_min,xfit_max);
   if(fitH->GetParameter(1)<xfit_min) {
     cout << "Reducing fit range by 2" << endl;
@@ -125,6 +132,7 @@ void fit(const char *run="19020_19035",
   TF1 *MIPH2 = GetMIP(fitH,2,kGreen-3);
   TF1 *MIPH3 = GetMIP(fitH,3,kOrange-3);
   TF1 *MIPH4 = GetMIP(fitH,4,kMagenta-3);
+  TF1 *BGR = GetBGR(fitH,xfit_min);
 
   double amp = fitH->GetParameter(0);
   double eamp= fitH->GetParError(0);
@@ -140,6 +148,10 @@ void fit(const char *run="19020_19035",
   double efr4= fitH->GetParError(5);
   double fr1 = 1 - fr2 - fr3 - fr4;
   double ncs = fitH->GetChisquare()/fitH->GetNDF();
+  double ba = fitH->GetParameter(6);
+  double eba= fitH->GetParError(6);
+  double bsl = fitH->GetParameter(7);
+  double ebsl= fitH->GetParError(7);
 
   // saving fit
   ofstream outfit;
@@ -150,6 +162,8 @@ void fit(const char *run="19020_19035",
   outfit << fr2 << " " << efr2 << endl;
   outfit << fr3 << " " << efr3 << endl;
   outfit << fr4 << " " << efr4 << endl;
+  outfit << ba  << " " << eba  << endl;
+  outfit << bsl << " " << ebsl << endl;
   outfit << ncs << endl;
   outfit.close();
   cout << "Parameters saved to ";
@@ -173,7 +187,7 @@ void fit(const char *run="19020_19035",
   //out->SetMarkerSize(0.3);
   out->SetTitle("");
   out->GetXaxis()->SetTitle("ADC-PED (a.u.)");
-
+  BGR->Draw("SAME");
   MIPH1->Draw("SAME");
   MIPH2->Draw("SAME");
   MIPH3->Draw("SAME");
@@ -196,6 +210,8 @@ void fit(const char *run="19020_19035",
   text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
   text->SetTextColor(kMagenta-3);
   text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
+  text->SetTextColor(kGray);
+  text->DrawLatex(30, (0.33*(ymax)), Form("Slope  %.2f",bsl) );
   text->SetTextColor(kBlack);
   text->SetTextSize(0.035);
   text->DrawLatex(5, (0.93*(ymax)), "#Alpha { f_{1} L(x,#lambda,#sigma) + f_{2} L(x,2.14#lambda,2#sigma) + f_{3} L(x,3.33#lambda,3#sigma) + f_{4} L(x,4,55#lambda,4#sigma)}");
