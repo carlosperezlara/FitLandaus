@@ -226,7 +226,8 @@ void fit(const char *run="432637_432999",
   TCanvas *main = new TCanvas("main","main");
   //main->SetLogy(1);
   out->Draw("HE");
-  double ymax = entries/8;
+  //double ymax = entries/8;
+  double ymax = out->GetBinContent( out->FindBin(xfit_min) )*1.5;
   out->GetYaxis()->SetRangeUser(0.5,ymax);
   out->GetXaxis()->SetRangeUser(-5,85);
   out->Sumw2();
@@ -258,6 +259,7 @@ void fit(const char *run="432637_432999",
   text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
   text->SetTextColor(kMagenta-3);
   text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
+  text->SetTextColor(kRed-3);
   text->DrawLatex(30, (0.48*(ymax)), Form("%s",state[arm][lyr][sen][mpd].Data()) );
   text->SetTextColor(kGray);
   text->DrawLatex(30, (0.33*(ymax)), Form("Slope  %.2f",bsl) );
