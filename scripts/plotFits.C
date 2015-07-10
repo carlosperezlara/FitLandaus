@@ -63,19 +63,8 @@ void fillmeansandrms() {
     }
     infi.close();
   }
-  /*
-  for(int arm=0; arm!=2; ++arm)
-    for(int lyr=0; lyr!=8; ++lyr) {  
-      cout << Form("%d %d | %f %f \n", arm, lyr,
-		   gmean[6][arm][lyr],
-		   grms[6][arm][lyr]
-		   );
-    }
-  */
 }
 
-//void plotFits(char *run = "19037_19049", int par=1) {
-//void plotFits(char *run = "19052_19057", int par=1) {
 void plotFits(char *run = "19020_19035", int par=1) {
   loadState();
   fillmeansandrms();
@@ -125,10 +114,10 @@ void HistoFromFit(TH1D *gr[7][2][8], TH1D *gr2[7][2][8], char *run, int par) {
   double tmp;
   for(int arm=0; arm!=2; ++arm)
     for(int lyr=0; lyr!=8; ++lyr) {
-      int min=14;
+      int min=6;
       int max=82;
       if(lyr>1) {
-	min=8;
+	min=4;
 	max=62;
       }
       gr[par][arm][lyr] = NewHis(par,arm,lyr,0);
@@ -167,11 +156,15 @@ void HistoFromFit(TH1D *gr[7][2][8], TH1D *gr2[7][2][8], char *run, int par) {
 	    //printf("%f\n",amp[arm][lyr][sen][mpd]);
 	    bool pass = true;
 	    //if( nc2[arm][lyr][sen][mpd] > gmean[6][arm][lyr]+3*grms[6][arm][lyr] ) pass = false;
-	    if( nc2[arm][lyr][sen][mpd] > 4.0 ) pass = false;
+	    //if( nc2[arm][lyr][sen][mpd] > 4.0 ) pass = false;
 	    //if( TMath::Abs(fr2[arm][lyr][sen][mpd] - gmean[3][arm][lyr]) > 5*grms[3][arm][lyr] ) pass = false;
 	    if( TMath::Abs(lda[arm][lyr][sen][mpd] - gmean[1][arm][lyr]) > 3*grms[1][arm][lyr] ) pass = false;
 	    if( lda[arm][lyr][sen][mpd] < 5.0 ) pass = false;
-	    if( TMath::Abs(sg1[arm][lyr][sen][mpd] - gmean[2][arm][lyr]) > 3*grms[2][arm][lyr] ) pass = false;
+	    //if( TMath::Abs(sg1[arm][lyr][sen][mpd] - gmean[2][arm][lyr]) > 3*grms[2][arm][lyr] ) pass = false;
+	    double msigma = 2.5;
+	    if(lyr<2) msigma = 3.5;
+	    if( TMath::Abs(sg1[arm][lyr][sen][mpd] - msigma) > 2.0 ) pass = false;
+		
 	    if(par==1)
 	      if(!pass) {
 		fout1 << filename << endl;

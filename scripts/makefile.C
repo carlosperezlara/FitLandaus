@@ -37,10 +37,10 @@ void makefile(TString run="19020_19035") {
     for(int lyr=0; lyr!=8; ++lyr)
       for(int sen=0; sen!=24; ++sen)
 	for(int mpd=0; mpd!=128; ++mpd) {
-	  int min=14;
+	  int min=6;
 	  int max=82;
 	  if(lyr>1) {
-	    min = 8;
+	    min = 4;
 	    max = 62;
 	  }
 	  int typ = lyr%2;
