@@ -1,10 +1,11 @@
+FILE = 430595_431736_3s
 N = 1536
 ID = $(Cluster).$(Process)
 
 Universe       = vanilla
 Initialdir     = /direct/phenix+u/cperez/
 Executable     = /bin/bash
-Arguments      = fitjob.sh $(Process)
+Arguments      = fitjob.sh ${FILE} $(Process)
 
 Notification   = Error
 Log            = log/LYR01_$(Cluster).log

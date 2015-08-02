@@ -11,51 +11,18 @@
 #include <iostream>
 #include <fstream>
 
-TString state[2][8][24][128];
-
-void loadState() {
-  ifstream fin;
-  int arm, lyr, sen, mpd;
-
-  fin.open("discretised.lst");
+int findstate(int key) {
+  int ret=0;
+  ifstream file;
+  file.open("status.lst");
+  int tmp, val;
   for(;;) {
-    fin >> arm;
-    if(!fin.good()) break;
-    fin >> lyr >> sen >> mpd;
-    state[arm][lyr][sen][mpd] = "discretised";
+    file >> tmp >> val;
+    if(!file.good()) break;
+    if(tmp==key) ret = val;
   }
-  fin.close();
-
-  fin.open("brokenABD.lst");
-  for(;;) {
-    fin >> arm;
-    if(!fin.good()) break;
-    fin >> lyr >> sen >> mpd;
-    state[arm][lyr][sen][mpd] = "BABD";
-  }
-  fin.close();
-
-  fin.open("broken.lst");
-  for(;;) {
-    fin >> arm;
-    if(!fin.good()) break;
-    fin >> lyr >> sen >> mpd;
-    state[arm][lyr][sen][mpd] = "BrOkEn";
-  }
-  fin.close();
-
-  fin.open("dead.lst");
-  int ndead=0;
-  for(;;++ndead) {
-    fin >> arm;
-    if(!fin.good()) break;
-    fin >> lyr >> sen >> mpd;
-    state[arm][lyr][sen][mpd] = "DeAd";
-  }
-  fin.close();
-  cout << "numnber of deads = " << ndead << endl;
-
-  return;
+  file.close();
+  return ret;
 }
 
 TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
@@ -145,17 +112,17 @@ TF1* GetBGR(TF1 *fit, double xinit, int color=kGray) {
   return ret;
 }
 
-void fit(const char *run="432637_432999",
-	 int arm=0, int lyr=1, int sen=13, int mpd=64,
-	 bool draw=true,
+void fit(const char *run="430595_431736_3s",
+	 int key=0, bool draw=true,
 	 double xfit_min=7.5, double xfit_max=82.5,
-	 int minentries=50) {
+	 int minentries=50,bool pa=false) {
   gSystem->Exec( Form("mkdir -p %s/fit",run) );
   gSystem->Exec( Form("mkdir -p %s/fiteps",run) );
-  loadState();
+  int state = findstate(key);
+  printf("state %d\n",state);
   // data
-  TString inname = Form("%s/adc/HI_ARM%d_LYR%d_S%d_M%d.root",run,arm,lyr,sen,mpd);
-  TString outname = Form("HI_ARM%d_LYR%d_S%d_M%d_%.0f_%.0f",arm,lyr,sen,mpd,xfit_min,xfit_max);
+  TString inname = Form("%s/adc/HI_KEY%05d.root",run,key);
+  TString outname = Form("HI_KEY%05d_%.0f_%.0f",key,xfit_min,xfit_max);
   TFile *file = new TFile( inname.Data() );
   cout << inname.Data() << endl;
 
@@ -170,7 +137,10 @@ void fit(const char *run="432637_432999",
   }
 
   // fit
-  TF1 *fitH = GetFit(run,outname.Data(),lyr,xfit_min);
+  int pkt=0;
+  if(pa)
+    int pkt = (key%(8*4*12*64))/(4*12*64);
+  TF1 *fitH = GetFit(run,outname.Data(),pkt,xfit_min);
   out->Fit(fitH,"MELIR","",xfit_min,xfit_max);
   if(fitH->GetParameter(1)<xfit_min) {
     cout << "Reducing fit range by 2" << endl;
@@ -224,16 +194,13 @@ void fit(const char *run="432637_432999",
   gStyle->SetOptStat(0);
 
   TCanvas *main = new TCanvas("main","main");
-  //main->SetLogy(1);
   out->Draw("HE");
-  //double ymax = entries/8;
   double ymax = out->GetBinContent( out->FindBin(xfit_min) )*1.5;
   out->GetYaxis()->SetRangeUser(0.5,ymax);
   out->GetXaxis()->SetRangeUser(-5,85);
   out->Sumw2();
   out->SetLineColor(kBlack);
   out->SetMarkerStyle(20);
-  //out->SetMarkerSize(0.3);
   out->SetTitle("");
   out->GetXaxis()->SetTitle("ADC-PED (a.u.)");
   BGR->Draw("SAME");
@@ -260,15 +227,13 @@ void fit(const char *run="432637_432999",
   text->SetTextColor(kMagenta-3);
   text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
   text->SetTextColor(kRed-3);
-  text->DrawLatex(30, (0.48*(ymax)), Form("%s",state[arm][lyr][sen][mpd].Data()) );
+  text->DrawLatex(30, (0.48*(ymax)), Form("STATE  %d",state) );
   text->SetTextColor(kGray);
   text->DrawLatex(30, (0.33*(ymax)), Form("Slope  %.2f",bsl) );
   text->SetTextColor(kBlack);
   text->SetTextSize(0.035);
   text->DrawLatex(5, (0.93*(ymax)), "#Alpha { f_{1} L(x,#lambda,#sigma) + f_{2} L(x,2.14#lambda,2#sigma) + f_{3} L(x,3.33#lambda,3#sigma) + f_{4} L(x,4,55#lambda,4#sigma)}");
-  //main->SaveAs( Form("%s/fiteps/%s.eps",run,outname.Data()), "eps" );
-  //main->SaveAs( Form("%s/fiteps/%s.jpg",run,outname.Data()), "jpg" );
-  main->SaveAs( Form("%s/fiteps/%s.png",run,outname.Data()), "png" );
+  main->SaveAs( Form("%s/fiteps/%s.eps",run,outname.Data()), "eps" );
   return;
 }
 
