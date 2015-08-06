@@ -112,7 +112,7 @@ TF1* GetBGR(TF1 *fit, double xinit, int color=kGray) {
   return ret;
 }
 
-void fit(const char *run="430595_431736_3s",
+void drawfit(const char *run="430595_431736_3s",
 	 int key=0, bool draw=true,
 	 double xfit_min=6.5, double xfit_max=82.5,
 	 int minentries=50,bool pa=false) {
@@ -122,7 +122,7 @@ void fit(const char *run="430595_431736_3s",
   printf("state %d\n",state);
   // data
   TString inname = Form("%s/adc/HI_KEY%05d.root",run,key);
-  TString outname = Form("HI_KEY%05d_%.0f_%.0f",key,xfit_min,xfit_max);
+  TString outname = Form("HI_KEY%05d_%0f_%0f",key,xfit_min,xfit_max);
   TFile *file = new TFile( inname.Data() );
   cout << inname.Data() << endl;
 
@@ -141,11 +141,6 @@ void fit(const char *run="430595_431736_3s",
   if(pa)
     int pkt = (key%(8*4*12*64))/(4*12*64);
   TF1 *fitH = GetFit(run,outname.Data(),pkt,xfit_min);
-  out->Fit(fitH,"MELIR","",xfit_min,xfit_max);
-  if(fitH->GetParameter(1)<xfit_min) {
-    cout << "Reducing fit range by 2" << endl;
-    out->Fit(fitH,"MELIR","",xfit_min-2,xfit_max);
-  }
   TF1 *MIPH1 = GetMIP(fitH,1,kCyan-3);
   TF1 *MIPH2 = GetMIP(fitH,2,kGreen-3);
   TF1 *MIPH3 = GetMIP(fitH,3,kOrange-3);
@@ -213,19 +208,19 @@ void fit(const char *run="430595_431736_3s",
   TLatex *text = new TLatex();
   text->DrawLatex(0, (1.03*(ymax)), inname.Data() );
   text->DrawLatex(30, (0.83*(ymax)), Form("Entries  %d",entries) );
-  text->DrawLatex(60, (0.83*(ymax)), Form("#Chi^{2} / NDF  %.2f",ncs) );
+  //text->DrawLatex(60, (0.83*(ymax)), Form("#Chi^{2} / NDF  %.2f",ncs) );
+  text->DrawLatex(60, (0.83*(ymax)), Form("Sgn  %.0f",fitH->GetParameter(0),fitH->GetParError(0)) );
   text->SetTextColor(kRed-3);
-  text->DrawLatex(60, (0.73*(ymax)), Form("#Alpha  %.0f #pm %.0f",fitH->GetParameter(0),fitH->GetParError(0)) );
-  text->DrawLatex(30, (0.73*(ymax)), Form("#lambda  %.1f #pm %.1f",lda,elda) );
-  text->DrawLatex(30, (0.63*(ymax)), Form("#sigma  %.1f #pm %.1f",sg1,esg1) );
+  text->DrawLatex(30, (0.73*(ymax)), Form("#lambda  %.1f",lda,elda) );
+  text->DrawLatex(30, (0.63*(ymax)), Form("#sigma  %.1f",sg1,esg1) );
   text->SetTextColor(kCyan-3);
   text->DrawLatex(60, (0.63*(ymax)), Form("f_{1}  %.2f",fr1) );
   text->SetTextColor(kGreen-3);
-  text->DrawLatex(60, (0.53*(ymax)), Form("f_{2}  %.2f #pm %.2f",fr2,efr2) );
+  text->DrawLatex(60, (0.53*(ymax)), Form("f_{2}  %.2f",fr2,efr2) );
   text->SetTextColor(kOrange-3);
-  text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
+  text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f",fr3,efr3) );
   text->SetTextColor(kMagenta-3);
-  text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
+  text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f",fr4,efr4) );
   text->SetTextColor(kRed-3);
   text->DrawLatex(30, (0.48*(ymax)), Form("STATE  %d",state) );
   text->SetTextColor(kGray);

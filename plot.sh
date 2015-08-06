@@ -1,2 +1,2 @@
-RUN=434017_435939
-root -l scripts/plotFits.C\(\"${RUN}\"\)
+RUN=430595_431736_3s
+root -l scripts/plotFitKey.C\(\"${RUN}\"\)
