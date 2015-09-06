@@ -27,10 +27,10 @@ int findstate(int key) {
 
 TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   const char *bgr = Form("[6]*TMath::Exp([7]*(x-%f))",xinit);
-  const char *la1 = "(1-[3]-[4]-[5])*TMath::Landau(x,1.00*[1],1.0*[2],1)";
-  const char *la2 = "[3]*TMath::Landau(x,2.14*[1],2.0*[2],1)";
-  const char *la3 = "[4]*TMath::Landau(x,3.33*[1],3.0*[2],1)";
-  const char *la4 = "[5]*TMath::Landau(x,4.55*[1],4.0*[2],1)";
+  const char *la1 = "(1-[3]-[4]-[5])*TMath::Landau(x,[1],[2],1)";
+  const char *la2 = "[3]*TMath::Landau(x,2*[1]+1.4*[2],2.0*[2],1)";
+  const char *la3 = "[4]*TMath::Landau(x,3*[1]+3.3*[2],3.0*[2],1)";
+  const char *la4 = "[5]*TMath::Landau(x,4*[1]+5.6*[2],4.0*[2],1)";
   TF1 *ret = new TF1("fit_H1",
                      Form("[0]*(%s+%s+%s+%s)+%s",la1,la2,la3,la4,bgr) );
   ret->SetParName(0,"A");
