@@ -140,7 +140,7 @@ void fit(const char *run="428211_429133_5s",
   TCanvas *main = new TCanvas("main","main");
   int pkt=0;
   if(pa)
-    int pkt = (key%(8*4*12*64))/(4*12*64);
+    pkt = (key%(8*4*12*64))/(4*12*64);
   TF1 *fitH = GetFit( Form("%s/SEN%03d/%s.dat",run,key/128,outname.Data()) ,pkt,xfit_min);
   out->Fit(fitH,"MELIR","",xfit_min,xfit_max);
   TF1 *MIPH1 = GetMIP(fitH,1,kCyan-3);
