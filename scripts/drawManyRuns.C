@@ -100,10 +100,11 @@ void drawManyRuns(int key=0) {
   out[2]->GetXaxis()->SetRangeUser(0,50);
   out[2]->GetYaxis()->SetRangeUser(0,max);
   out[2]->Draw("HE");
-  for(int i=0; i!=3; ++i)
-    fitH[i]->Draw("same");
+  //for(int i=0; i!=3; ++i)
+  //  fitH[i]->Draw("same");
   for(int i=2; i!=-1; --i) {
-    leg->AddEntry(out[i],Form("%s:  #lambda  %.1f",runs[i].Data(),lda[i]));
+    //leg->AddEntry(out[i],Form("%s:  #lambda  %.1f",runs[i].Data(),lda[i]));
+    leg->AddEntry(out[i],Form("%s",runs[i].Data()));
     out[i]->Draw("HE same");
   }
 

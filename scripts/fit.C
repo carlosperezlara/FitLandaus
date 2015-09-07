@@ -44,7 +44,7 @@ TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
     ret->SetParameter(1,15);   ret->SetParLimits(1,2,30);
     ret->SetParameter(2,5.0);  ret->SetParLimits(2,0.8,10.0);
   }
-  ret->SetParameter(3,0.20); ret->SetParLimits(3,-1e-10,0.40);
+  ret->SetParameter(3,0.20); ret->SetParLimits(3,0,0.40);
   ret->SetParameter(4,0.0);
   ret->SetParameter(5,0.0);
   ret->SetParameter(6,500); ret->SetParLimits(6,1e2,1e7);
@@ -66,8 +66,8 @@ TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   infit.close();
   if(found) {
     cout << " Previous fit results found" << endl;
-    ret->SetParLimits(4,0,0.10);
-    ret->SetParLimits(5,0,0.10);
+    ret->SetParLimits(4,0,0.40);
+    ret->SetParLimits(5,0,0.40);
   } else {
     ret->SetParLimits(4,+1,-1);
     ret->SetParLimits(5,+1,-1);
@@ -114,21 +114,32 @@ TF1* GetBGR(TF1 *fit, double xinit, int color=kGray) {
 
 void fit(const char *run="430595_431736_3s",
 	 int key=0, bool draw=true,
-	 double xfit_min=6.5, double xfit_max=82.5,
-	 int minentries=50,bool pa=false) {
+	 bool pa=false) {
+  int minentries=1000;
+  double xfit_min=1.5;
+  double xfit_max=122.5;
   gSystem->Exec( Form("mkdir -p %s/fit",run) );
   gSystem->Exec( Form("mkdir -p %s/fiteps",run) );
   int state = findstate(key);
   printf("state %d\n",state);
   // data
   TString inname = Form("%s/adc/HI_KEY%05d.root",run,key);
-  TString outname = Form("HI_KEY%05d_%.0f_%.0f",key,xfit_min,xfit_max);
+  TString outname = Form("HI_KEY%05d",key);
   TFile *file = new TFile( inname.Data() );
   cout << inname.Data() << endl;
 
   TH1D *out = (TH1D*) file->Get("out");
-  int bmin = out->GetXaxis()->FindBin(xfit_min);
+  int bmin;
   int bmax = out->GetXaxis()->FindBin(xfit_max);
+  int nbin = 3;
+  for(int i=0; i!=bmax; ++i) {
+    if( out->GetBinContent(i) > 0 ) --nbin;
+    if(nbin==0) {
+      bmin = i;
+      break;
+    }
+  }
+  xfit_min = out->GetBinLowEdge( bmin );
   int entries = out->Integral(bmin,bmax);
   if(entries<minentries) {
     cout << "not enough entries: ";
@@ -137,6 +148,7 @@ void fit(const char *run="430595_431736_3s",
   }
 
   // fit
+  TCanvas *main = new TCanvas("main","main");
   int pkt=0;
   if(pa)
     int pkt = (key%(8*4*12*64))/(4*12*64);
@@ -192,12 +204,10 @@ void fit(const char *run="430595_431736_3s",
 
   gStyle->SetOptFit(0);
   gStyle->SetOptStat(0);
-
-  TCanvas *main = new TCanvas("main","main");
   out->Draw("HE");
   double ymax = out->GetBinContent( out->FindBin(xfit_min) )*1.5;
   out->GetYaxis()->SetRangeUser(0.5,ymax);
-  out->GetXaxis()->SetRangeUser(-5,85);
+  out->GetXaxis()->SetRangeUser(-5,125);
   out->Sumw2();
   out->SetLineColor(kBlack);
   out->SetMarkerStyle(20);
@@ -213,26 +223,27 @@ void fit(const char *run="430595_431736_3s",
   TLatex *text = new TLatex();
   text->DrawLatex(0, (1.03*(ymax)), inname.Data() );
   text->DrawLatex(30, (0.83*(ymax)), Form("Entries  %d",entries) );
-  text->DrawLatex(60, (0.83*(ymax)), Form("#Chi^{2} / NDF  %.2f",ncs) );
+  text->DrawLatex(30, (0.73*(ymax)), Form("State  %d",state) );
+  text->DrawLatex(30, (0.53*(ymax)), Form("#lambda  %.1f #pm %.1f",lda,elda) );
+  text->DrawLatex(30, (0.43*(ymax)), Form("#sigma  %.1f #pm %.1f",sg1,esg1) );
   text->SetTextColor(kRed-3);
-  text->DrawLatex(60, (0.73*(ymax)), Form("#Alpha  %.0f #pm %.0f",fitH->GetParameter(0),fitH->GetParError(0)) );
-  text->DrawLatex(30, (0.73*(ymax)), Form("#lambda  %.1f #pm %.1f",lda,elda) );
-  text->DrawLatex(30, (0.63*(ymax)), Form("#sigma  %.1f #pm %.1f",sg1,esg1) );
+  text->DrawLatex(30, (0.63*(ymax)), Form("#Chi^{2} / NDF  %.2f",ncs) );
+  text->SetTextColor(kBlue-3);
+  text->DrawLatex(75, (0.73*(ymax)), Form("#Alpha  %.0f #pm %.0f",fitH->GetParameter(0),fitH->GetParError(0)) );
   text->SetTextColor(kCyan-3);
-  text->DrawLatex(60, (0.63*(ymax)), Form("f_{1}  %.2f",fr1) );
+  text->DrawLatex(75, (0.63*(ymax)), Form("f_{1}  %.2f",fr1) );
   text->SetTextColor(kGreen-3);
-  text->DrawLatex(60, (0.53*(ymax)), Form("f_{2}  %.2f #pm %.2f",fr2,efr2) );
+  text->DrawLatex(75, (0.53*(ymax)), Form("f_{2}  %.2f #pm %.2f",fr2,efr2) );
   text->SetTextColor(kOrange-3);
-  text->DrawLatex(60, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
+  text->DrawLatex(75, (0.43*(ymax)), Form("f_{3}  %.2f #pm %.2f",fr3,efr3) );
   text->SetTextColor(kMagenta-3);
-  text->DrawLatex(60, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
-  text->SetTextColor(kRed-3);
-  text->DrawLatex(30, (0.48*(ymax)), Form("STATE  %d",state) );
+  text->DrawLatex(75, (0.33*(ymax)), Form("f_{4}  %.2f #pm %.2f",fr4,efr4) );
   text->SetTextColor(kGray);
-  text->DrawLatex(30, (0.33*(ymax)), Form("Slope  %.2f",bsl) );
+  text->DrawLatex(75, (0.83*(ymax)), Form("b  %.2f",bsl) );
   text->SetTextColor(kBlack);
   text->SetTextSize(0.035);
-  text->DrawLatex(5, (0.93*(ymax)), "#Alpha { f_{1} L(x,#lambda,#sigma) + f_{2} L(x,2.14#lambda,2#sigma) + f_{3} L(x,3.33#lambda,3#sigma) + f_{4} L(x,4,55#lambda,4#sigma)}");
+  text->SetTextColor( kRed-3 );
+  text->DrawLatex(30, (0.93*(ymax)), "e^{bx} + #Alpha ( f_{1} L_{1}(x) + f_{2} L_{2}(x) + f_{3} L_{3}(x) + f_{4} L_{4}(x))");
   main->SaveAs( Form("%s/fiteps/%s.eps",run,outname.Data()), "eps" );
   return;
 }
