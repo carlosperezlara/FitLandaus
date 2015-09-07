@@ -5,10 +5,10 @@ Float_t epar[9][128] = {0};
 Float_t x[128] = {0};
 Float_t ex[128] = {0};
 
-void drawSensor(char *run = "428211_429133_5s", int init=256) {
+void drawSensor(char *run = "428211_429133_5s", int sen=0) {
   LoadState();
-  for(int i=0; i!=128; ++i) x[i] = init+i;
-  LoadData(run,init);
+  for(int i=0; i!=128; ++i) x[i] = sen*128+i;
+  LoadData(run,sen*128);
   TGraphErrors *hi[9];
   for(int i=0; i!=9; ++i) {
     hi[i] = MakeGraph(i);
@@ -32,7 +32,7 @@ void LoadData(char *run,int init) {
   TString filename;
   Float_t peep;
   for(int i=0; i!=128; ++i) {
-    filename = Form("%s/fit/HI_KEY%05d.dat",run,init+i);
+    filename = Form("%s/SEN%03d/HI_KEY%05d.dat",run,(init+i)/128,init+i);
     fin.open( filename.Data() );
     fin >> peep;
     if(!fin.good()) {

@@ -25,7 +25,7 @@ int findstate(int key) {
   return ret;
 }
 
-TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
+TF1* GetFit(const char *address, int lyr, double xinit) {
   const char *bgr = Form("[6]*TMath::Exp([7]*(x-%f))",xinit);
   const char *la1 = "(1-[3]-[4]-[5])*TMath::Landau(x,[1],[2],1)";
   const char *la2 = "[3]*TMath::Landau(x,2*[1]+1.4*[2],2.0*[2],1)";
@@ -38,7 +38,7 @@ TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   ret->SetParName(2,"sigma");
   ret->SetParName(3,"f2");
   ret->SetParameter(0,1e4);  ret->SetParLimits(0,1e2,1e7);
-  ret->SetParameter(1,20);   ret->SetParLimits(1,11,30.0);
+  ret->SetParameter(1,21);   ret->SetParLimits(1,13,25.0);
   ret->SetParameter(2,3.0);  ret->SetParLimits(2,1.5,5.0);
   if(lyr>1) {
     ret->SetParameter(1,15);   ret->SetParLimits(1,2,30);
@@ -53,7 +53,7 @@ TF1* GetFit(const char *run, const char *outname, int lyr, double xinit) {
   ret->SetLineColor(kRed-3);
 
   ifstream infit;
-  infit.open( Form("%s/fit/%s.dat",run,outname) );
+  infit.open( address );
   double tmp;
   bool found=false;
   for(int n=0; n!=ret->GetNpar(); ++n) {
@@ -112,14 +112,11 @@ TF1* GetBGR(TF1 *fit, double xinit, int color=kGray) {
   return ret;
 }
 
-void fit(const char *run="430595_431736_3s",
-	 int key=0, bool draw=true,
-	 bool pa=false) {
+void fit(const char *run="428211_429133_5s",
+	 int key=1, int bmin=10, bool draw=true, bool pa=false) {
   int minentries=1000;
-  double xfit_min=1.5;
-  double xfit_max=122.5;
-  gSystem->Exec( Form("mkdir -p %s/fit",run) );
-  gSystem->Exec( Form("mkdir -p %s/fiteps",run) );
+  gSystem->Exec( Form("mkdir -p %s/SEN%03d",run,key/128) );
+  gSystem->Exec( Form("mkdir -p %s/SEN%03d",run,key/128) );
   int state = findstate(key);
   printf("state %d\n",state);
   // data
@@ -129,17 +126,9 @@ void fit(const char *run="430595_431736_3s",
   cout << inname.Data() << endl;
 
   TH1D *out = (TH1D*) file->Get("out");
-  int bmin;
+  double xfit_min=out->GetBinLowEdge(bmin);
+  double xfit_max=122.5;
   int bmax = out->GetXaxis()->FindBin(xfit_max);
-  int nbin = 3;
-  for(int i=0; i!=bmax; ++i) {
-    if( out->GetBinContent(i) > 0 ) --nbin;
-    if(nbin==0) {
-      bmin = i;
-      break;
-    }
-  }
-  xfit_min = out->GetBinLowEdge( bmin );
   int entries = out->Integral(bmin,bmax);
   if(entries<minentries) {
     cout << "not enough entries: ";
@@ -152,12 +141,8 @@ void fit(const char *run="430595_431736_3s",
   int pkt=0;
   if(pa)
     int pkt = (key%(8*4*12*64))/(4*12*64);
-  TF1 *fitH = GetFit(run,outname.Data(),pkt,xfit_min);
+  TF1 *fitH = GetFit( Form("%s/SEN%03d/%s.dat",run,key/128,outname.Data()) ,pkt,xfit_min);
   out->Fit(fitH,"MELIR","",xfit_min,xfit_max);
-  if(fitH->GetParameter(1)<xfit_min) {
-    cout << "Reducing fit range by 2" << endl;
-    out->Fit(fitH,"MELIR","",xfit_min-2,xfit_max);
-  }
   TF1 *MIPH1 = GetMIP(fitH,1,kCyan-3);
   TF1 *MIPH2 = GetMIP(fitH,2,kGreen-3);
   TF1 *MIPH3 = GetMIP(fitH,3,kOrange-3);
@@ -185,7 +170,7 @@ void fit(const char *run="430595_431736_3s",
 
   // saving fit
   ofstream outfit;
-  outfit.open( Form("%s/fit/%s.dat",run,outname.Data()) );
+  outfit.open( Form("%s/SEN%03d/%s.dat",run,key/128,outname.Data()) );
   outfit << amp << " " << eamp << endl;
   outfit << lda << " " << elda << endl;
   outfit << sg1 << " " << esg1 << endl;
@@ -244,7 +229,7 @@ void fit(const char *run="430595_431736_3s",
   text->SetTextSize(0.035);
   text->SetTextColor( kRed-3 );
   text->DrawLatex(30, (0.93*(ymax)), "e^{bx} + #Alpha ( f_{1} L_{1}(x) + f_{2} L_{2}(x) + f_{3} L_{3}(x) + f_{4} L_{4}(x))");
-  main->SaveAs( Form("%s/fiteps/%s.eps",run,outname.Data()), "eps" );
+  main->SaveAs( Form("%s/SEN%03d/%s.eps",run,key/128,outname.Data()), "eps" );
   return;
 }
 
