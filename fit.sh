@@ -1,5 +1,5 @@
-RUN=428211_429133_5s
+RUN=$1
+SENPAR=$2
 DRAW=1
-SEN=20
-root -b -l -q scripts/fitblk.C\(\"${RUN}\",${SEN},${DRAW},0\)
-root -b -l -q scripts/fitblk.C\(\"${RUN}\",${SEN},${DRAW},0\)
+root -b -l -q scripts/fitblk.C\(\"${RUN}\",${SENPAR}/4,${SENPAR}%4,${DRAW},0\)
+root -b -l -q scripts/fitblk.C\(\"${RUN}\",${SENPAR}/4,${SENPAR}%4,${DRAW},0\)

@@ -1,5 +1,4 @@
-void fitblk(char *run="RANDOM", int sen=0,
-	    bool draw=false, bool pa=false) {
+void fitblk(char *run="RANDOM", int sen=0, int par=0, bool draw=false, bool pa=false) {
   if(0) {
     gROOT->LoadMacro("scripts/fit.C++g");
     return;
@@ -17,7 +16,7 @@ void fitblk(char *run="RANDOM", int sen=0,
     bmin[i] = b;
   }
 
-  for(int i=0; i!=128; ++i) {
+  for(int i=32*par; i!=32*(par+1); ++i) {
     int key = 128*sen + i;
     //cout << key << "|" << bmin[i] << endl;
     fit(run,key,bmin[i],draw,pa);
